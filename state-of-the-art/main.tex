@@ -1,0 +1,104 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{csquotes}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[
+    backend=biber,
+    style=ieee,
+    sorting=none
+]{biblatex}
+
+\addbibresource{referencias.bib}
+
+\geometry{
+    top=2.2cm,
+    bottom=2.2cm,
+    left=2.5cm,
+    right=2.5cm
+}
+
+
+
+\title{Impacto de los obstáculos en el desempeño de estructuras de broad phase: análisis respecto al número de agentes y la complejidad geométrica del entorno}
+\author{Andrés Jablonca 202173578-K\\Benjamín Olguin 202273517-1}
+\date{September 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Definición del problema}
+
+La detección de colisiones entre múltiples objetos en movimiento suele dividirse en una etapa de \textit{broad phase}, encargada de reducir el número de pares candidatos, y una etapa posterior de verificación exacta. Para optimizar este proceso se han estudiado distintas estructuras geométricas y estrategias cinéticas.
+
+Guibas, Xie y Zhang \cite{guibas2001kinetic} estudian algoritmos de detección de colisiones bajo el paradigma de las \textit{Kinetic Data Structures} (KDS) y comparan su desempeño con otros métodos de detección. Gavrilova y Rokne \cite{gavrilova2003collision}, por su parte, comparan distintas estructuras dinámicas para sistemas de múltiples partículas, incluyendo diagramas de Voronoi y técnicas de subdivisión espacial.
+
+Estos trabajos consideran principalmente escenarios sin obstáculos. Sin embargo, en aplicaciones como simulaciones de evacuación en espacios interiores, la geometría del entorno puede modificar significativamente las relaciones de proximidad entre agentes. Dos agentes pueden estar próximos según distancia euclidiana, pero separados por una pared u otro obstáculo.
+
+Korman et al. \cite{korman2023kinetic} estudian este tipo de situación mediante un diagrama de Voronoi geodésico cinético para sitios móviles dentro de un polígono simple de \(m\) vértices. Sus resultados muestran que la complejidad del entorno influye directamente en la evolución de la estructura, llegando a producir \(O(m^3)\) cambios en ciertos elementos del diagrama en el peor caso.
+
+A partir de estos antecedentes se plantea la siguiente pregunta:
+
+\begin{quote}
+\textbf{¿Cómo afecta la incorporación de obstáculos al desempeño relativo de distintas estructuras de \textit{broad phase}, y cómo se distribuye su costo computacional entre el número de agentes \(n\) y la complejidad geométrica del entorno \(m\)?}
+\end{quote}
+
+La hipótesis de trabajo es que las estructuras basadas principalmente en proximidad euclidiana podrían perder parte de su ventaja en presencia de obstáculos, al mantener relaciones entre agentes cercanos euclidianamente pero separados físicamente. En cambio, las estructuras basadas en subdivisión espacial podrían verse menos afectadas al permitir representar directamente la geometría del entorno.
+
+\section{Estado del arte}
+
+La detección de colisiones constituye un problema fundamental en áreas como robótica, simulación física, animación computacional y entornos virtuales. Cuando una escena contiene un número elevado de objetos, comprobar directamente todos los pares posibles conduce a un número cuadrático de comparaciones. Por esta razón, una estrategia ampliamente utilizada consiste en separar el proceso en una etapa de \textit{broad phase}, que genera un conjunto reducido de pares potencialmente colisionantes, y una etapa de \textit{narrow phase}, encargada de verificar con mayor precisión los pares seleccionados \cite{cohen1995icollide,guibas2001kinetic,serpa2019flexible,cao2023fast}.
+
+Uno de los trabajos tempranos relevantes en esta dirección es I-COLLIDE, propuesto por Cohen et al. \cite{cohen1995icollide} para detección interactiva y exacta de colisiones en entornos de gran escala. Su propuesta utiliza volúmenes envolventes alineados con los ejes para descartar pares de objetos antes de ejecutar pruebas exactas. En lugar de evaluar de manera directa todas las combinaciones posibles, el método explota la coherencia entre estados consecutivos y emplea ordenamiento sobre las proyecciones de los volúmenes para identificar solapamientos. De este modo, los autores buscan reducir el costo asociado a las \(O(n^2)\) interacciones potenciales, concentrando la verificación exacta en los pares que permanecen espacialmente próximos.
+
+El aprovechamiento sistemático de la coherencia temporal fue formalizado posteriormente mediante las \textit{Kinetic Data Structures} (KDS). Basch, Guibas y Hershberger \cite{basch1999mobile} presentan este paradigma para mantener propiedades geométricas de objetos sometidos a movimiento continuo. Una KDS mantiene una propiedad mediante condiciones, denominadas \textit{certificates}, cuya validez garantiza que la estructura combinatoria correspondiente continúa siendo correcta. Cuando uno de estos certificados falla, se genera un evento y únicamente la parte afectada de la estructura debe ser actualizada. Esta formulación permite evitar la reconstrucción completa de una estructura geométrica en cada instante de tiempo y aprovechar directamente la continuidad del movimiento.
+
+Esta idea resulta especialmente pertinente para detección de colisiones, ya que los eventos relevantes no necesariamente ocurren con una frecuencia uniforme. Guibas, Xie y Zhang \cite{guibas2001kinetic} aplican el paradigma KDS al problema de detección de colisiones y proponen algoritmos tanto para \textit{broad phase} como para \textit{narrow phase}. En la primera etapa utilizan esferas envolventes y mantienen cinéticamente un \textit{power diagram}, de forma que las relaciones geométricas relevantes se actualizan a medida que los objetos se mueven. Los autores comparan experimentalmente su propuesta con técnicas clásicas de detección y muestran que las estructuras cinéticas pueden aprovechar la coherencia temporal para reducir el trabajo necesario durante la simulación.
+
+Una línea relacionada estudia qué estructura geométrica resulta más conveniente para mantener las relaciones entre objetos móviles. Gavrilova y Rokne \cite{gavrilova2003collision} analizan la optimización de detección de colisiones en sistemas de múltiples partículas mediante estructuras dinámicas de geometría computacional. Entre las alternativas consideradas se encuentran un diagrama de Voronoi generalizado dinámico, subdivisión espacial regular, árboles espaciales y árboles de segmentos. Su análisis muestra que el costo de una técnica de optimización no depende únicamente del número de vecinos que mantiene, sino también del costo de inicialización, del almacenamiento requerido y de los eventos topológicos provocados por el movimiento.
+
+Estos trabajos permiten distinguir dos fuentes de costo. Por una parte, las estructuras basadas en proximidad pueden mantener conjuntos relativamente reducidos de vecinos, pero requieren modificar su topología cuando cambian las relaciones geométricas entre los objetos. Por otra, las estructuras de subdivisión espacial agrupan los objetos de acuerdo con regiones del dominio y pueden generar candidatos adicionales cuando varios objetos comparten una misma región. Por ello, la eficiencia de una estructura de \textit{broad phase} está condicionada por factores como la distribución espacial, la movilidad de los objetos y la frecuencia con que la estructura debe ser actualizada.
+
+\subsection{Subdivisión espacial y métodos híbridos}
+
+En trabajos más recientes, las estrategias de \textit{broad phase} han combinado razonamiento espacial y temporal para obtener soluciones aplicables a una mayor variedad de escenarios. Serpa y Rodrigues \cite{serpa2019flexible} describen tres componentes habituales en estos métodos: simplificación geométrica mediante volúmenes envolventes, razonamiento espacial mediante particiones u ordenamientos, y razonamiento temporal mediante la reutilización de información entre cuadros consecutivos.
+
+Los autores proponen una solución híbrida basada en un KD-tree y \textit{Sweep-and-Prune} (SAP), orientada a escenarios con distintos grados de coherencia de movimiento, distribuciones espaciales y tamaños de objetos. Sus experimentos consideran hasta aproximadamente un millón de objetos y reportan un rendimiento promedio superior al de otras soluciones CPU basadas en AABB evaluadas en el trabajo \cite{serpa2019flexible}. Un aspecto relevante de sus resultados es que el desempeño de una técnica de \textit{broad phase} puede cambiar de manera importante al modificarse las características del escenario, por lo que no existe necesariamente una estructura que domine en todas las condiciones.
+
+Cao y Wang \cite{cao2023fast} continúan esta línea mediante una combinación de subdivisión espacial con KD-tree y SAP. El KD-tree divide inicialmente el conjunto de objetos en regiones más pequeñas, y posteriormente SAP se aplica dentro de dichas regiones, reduciendo el número de elementos procesados en cada barrido. La propuesta incorpora además preordenamiento e inferencia temporal, y es evaluada con más de un millón de objetos. Estos resultados evidencian que las técnicas convencionales de \textit{broad phase} pueden alcanzar una alta escalabilidad cuando la proximidad entre objetos se modela utilizando las relaciones espaciales habituales.
+
+Sin embargo, estas estrategias organizan los objetos principalmente a partir de su posición en el espacio euclidiano. En consecuencia, factores como el número de objetos, su distribución, su tamaño y la coherencia del movimiento son considerados explícitamente, mientras que la complejidad geométrica de un entorno con obstáculos no aparece como una dimensión central del problema.
+
+\subsection{Proximidad geodésica y geometría del entorno}
+
+La situación cambia cuando el movimiento de los agentes está restringido por la geometría del dominio. En un espacio interior, por ejemplo, dos agentes pueden encontrarse a una distancia euclidiana pequeña y, al mismo tiempo, estar separados físicamente por una pared. En este contexto, una relación basada exclusivamente en proximidad euclidiana puede mantener como vecinos a agentes cuya interacción directa está impedida por el entorno.
+
+Una forma de incorporar la geometría del dominio es utilizar distancia geodésica. Agarwal, Arge y Staals \cite{agarwal2018dynamic} estudian consultas dinámicas de vecino más cercano para un conjunto de sitios dentro de un polígono simple estático, midiendo las distancias mediante la longitud del camino más corto contenido completamente dentro del polígono. Su estructura admite inserciones, eliminaciones y consultas de vecino más cercano, y su complejidad espacial depende tanto del número \(n\) de sitios como del número \(m\) de vértices del polígono.
+
+Este resultado muestra una diferencia importante respecto de la proximidad euclidiana: al utilizar distancia geodésica, la geometría del dominio pasa a influir directamente en el costo de las estructuras que mantienen relaciones de proximidad. Los autores señalan además que mantener explícitamente un diagrama de Voronoi geodésico bajo actualizaciones puede resultar costoso, ya que una sola inserción o eliminación puede provocar numerosos cambios en la estructura \cite{agarwal2018dynamic}.
+
+La relación entre movimiento continuo y proximidad geodésica es estudiada de forma directa por Korman et al. \cite{korman2023kinetic}. Los autores consideran \(n\) sitios que se desplazan linealmente dentro de un polígono simple estático de \(m\) vértices y desarrollan una KDS para mantener el diagrama de Voronoi geodésico durante el movimiento. Su análisis identifica los eventos combinatorios que modifican la estructura y demuestra que tanto un bisector geodésico asociado a dos sitios como un centro de Voronoi asociado a tres sitios pueden experimentar \(O(m^3)\) cambios en el peor caso. Además, las estructuras cinéticas propuestas para estos componentes procesan cada evento en \(O(\log^2 m)\).
+
+Este resultado es especialmente relevante para el problema considerado, pues evidencia que la complejidad geométrica del entorno puede introducir una fuente de costo independiente del número de agentes. Es decir, aun manteniendo fijo \(n\), aumentar la complejidad \(m\) del dominio puede incrementar de manera significativa la cantidad de cambios que debe procesar una estructura basada en proximidad geodésica.
+
+\subsection{Síntesis}
+
+La literatura revisada muestra, por una parte, una evolución de los métodos de \textit{broad phase} orientada a reducir el número de pares candidatos mediante coherencia temporal, estructuras de proximidad, ordenamientos y subdivisión espacial \cite{cohen1995icollide,guibas2001kinetic,gavrilova2003collision,serpa2019flexible,cao2023fast}. Estos trabajos estudian principalmente el efecto del número de objetos y de las características de su movimiento y distribución.
+
+Por otra parte, los trabajos sobre proximidad geodésica muestran que la incorporación de la geometría del dominio introduce una dependencia adicional respecto de su complejidad \(m\) \cite{agarwal2018dynamic,korman2023kinetic}. En particular, los resultados de Korman et al. \cite{korman2023kinetic} evidencian que la presencia de un dominio poligonal puede alterar significativamente la evolución de una estructura cinética de proximidad.
+
+A partir de estos antecedentes, el problema de interés se mantiene exactamente en los términos definidos previamente: estudiar \textbf{cómo afecta la incorporación de obstáculos al desempeño relativo de distintas estructuras de \textit{broad phase}, y cómo se distribuye su costo computacional entre el número de agentes \(n\) y la complejidad geométrica del entorno \(m\)}. El objetivo no es reemplazar la detección de colisiones por un problema distinto de búsqueda geodésica, sino utilizar los resultados de proximidad geodésica como antecedente para estudiar cómo la geometría del entorno puede modificar el comportamiento de estructuras utilizadas durante la \textit{broad phase}.
+
+En particular, la hipótesis se mantiene en que las estructuras basadas principalmente en proximidad euclidiana podrían perder parte de su ventaja en presencia de obstáculos, debido a que pueden conservar relaciones entre agentes cercanos euclidianamente pero separados físicamente. En contraste, las estructuras basadas en subdivisión espacial podrían verse menos afectadas al permitir representar directamente la geometría del entorno. Esta comparación permite plantear un análisis experimental en el que \(n\) y \(m\) sean controlados de manera independiente para estudiar qué parte del costo proviene de la cantidad de agentes y cuál de la complejidad del escenario.
+
+\printbibliography
+
+\end{document}
